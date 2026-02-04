@@ -2,8 +2,10 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pedro's Click Fortune</title>
     <style>
+        /* Estilos e Fundo Animado */
         body {
             font-family: 'Segoe UI', sans-serif;
             margin: 0; padding: 20px;
@@ -14,7 +16,11 @@
             animation: gradient 15s ease infinite;
         }
         @keyframes gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .placar { font-size: 35px; margin: 10px 0; color: #ffd700; font-weight: bold; }
+
+        .placar { font-size: 35px; margin: 10px 0; color: #ffd700; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+        .info { font-size: 18px; color: #ccc; margin-bottom: 10px; }
+
+        /* A Moeda */
         #moeda {
             width: 200px; height: 200px;
             background: radial-gradient(circle, #ffe066 0%, #ffd700 50%, #b8860b 100%);
@@ -25,44 +31,95 @@
             transition: transform 0.05s; position: relative; overflow: hidden; margin: 20px;
         }
         #moeda:active { transform: scale(0.9); }
+        .brilho {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg); animation: moveBrilho 3s infinite;
+        }
+        @keyframes moveBrilho { 0% { left: -150%; } 100% { left: 150%; } }
+
+        /* Painéis */
         .container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 900px; }
-        .painel { background: rgba(0, 0, 0, 0.7); padding: 20px; border-radius: 15px; border: 1px solid #ffd700; flex: 1; min-width: 280px; }
-        button { width: 100%; padding: 12px; margin: 8px 0; background: #ffd700; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .painel { background: rgba(0, 0, 0, 0.8); padding: 20px; border-radius: 15px; border: 1px solid #ffd700; flex: 1; min-width: 280px; }
+        
+        button {
+            width: 100%; padding: 12px; margin: 8px 0;
+            background: #ffd700; border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
         button:disabled { background: #555; color: #888; cursor: not-allowed; }
+        button:hover:not(:disabled) { background: #fff; transform: translateY(-2px); }
+
+        input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: none; box-sizing: border-box; }
+        table { width: 100%; margin-top: 10px; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #444; }
     </style>
 </head>
 <body>
+
     <h1>Pedro's Click Fortune</h1>
     <div class="placar">💰 Pontos: <span id="pontos">0</span></div>
-    <div id="moeda" onclick="clicar()">$</div>
+    <div class="info">Poder do Clique: <span id="poderClique">1</span> | Auto: <span id="poderAuto">0</span>/s</div>
+
+    <div id="moeda" onclick="clicar()">
+        <div class="brilho"></div>
+        $
+    </div>
+
     <div class="container">
         <div class="painel">
-            <h3>🛒 Loja</h3>
-            <button id="btnClick" onclick="comprarUpgrade('click')">🔥 Super Clique (25 pts)</button>
-            <button id="btn1" onclick="comprarUpgrade('ajudante')">🤖 Ajudante (50 pts)</button>
+            <h3>🛒 Loja de Upgrades</h3>
+            <button id="btnClick" onclick="comprarUpgrade('click')">🔥 Super Clique (Custa 25) +1/clique</button>
+            <hr style="border: 0.5px solid #444;">
+            <button id="btn1" onclick="comprarUpgrade('ajudante')">🤖 Ajudante (Custa 50) +1/s</button>
+            <button id="btn2" onclick="comprarUpgrade('robo')">🚀 Robô (Custa 200) +5/s</button>
+            <button id="btn3" onclick="comprarUpgrade('fazenda')">🏰 Fazenda (Custa 1000) +20/s</button>
+        </div>
+
+        <div class="painel">
+            <h3>🏆 Ranking</h3>
+            <input type="text" id="nomeJogador" placeholder="Seu nome">
+            <button onclick="salvarRanking()" style="background: #27ae60; color: white;">Salvar no Ranking</button>
+            <table>
+                <thead><tr><th>Nome</th><th>Pontos</th></tr></thead>
+                <tbody id="listaRanking"></tbody>
+            </table>
         </div>
     </div>
 
-    <audio id="somMoeda"><source src="https://www.soundjay.com/buttons/sounds/button-37a.mp3" type="audio/mpeg"></audio>
+    <audio id="somMoeda">
+        <source src="https://www.soundjay.com/buttons/sounds/button-37a.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
-        // O código JS agora está aqui dentro!
+        // Lógica do Jogo
         let pontos = 0;
         let pontosPorClique = 1;
         let pontosPorSegundo = 0;
         let precoClick = 25;
+        let ranking = JSON.parse(localStorage.getItem('rankingPedro')) || [];
+
+        const som = document.getElementById('somMoeda');
+        const displayPontos = document.getElementById('pontos');
+        const displayPoderClique = document.getElementById('poderClique');
+        const displayPoderAuto = document.getElementById('poderAuto');
 
         function atualizarInterface() {
-            document.getElementById('pontos').innerText = Math.floor(pontos);
+            displayPontos.innerText = Math.floor(pontos);
+            displayPoderClique.innerText = pontosPorClique;
+            displayPoderAuto.innerText = pontosPorSegundo;
+
+            document.getElementById('btnClick').innerText = `🔥 Super Clique (Custa ${precoClick}) +1/clique`;
             document.getElementById('btnClick').disabled = pontos < precoClick;
             document.getElementById('btn1').disabled = pontos < 50;
+            document.getElementById('btn2').disabled = pontos < 200;
+            document.getElementById('btn3').disabled = pontos < 1000;
         }
 
         function clicar() {
             pontos += pontosPorClique;
-            const som = document.getElementById('somMoeda');
             som.currentTime = 0;
-            som.play().catch(() => {});
+            som.play().catch(() => {}); 
             atualizarInterface();
         }
 
@@ -74,8 +131,29 @@
             } else if (tipo === 'ajudante' && pontos >= 50) {
                 pontos -= 50;
                 pontosPorSegundo += 1;
+            } else if (tipo === 'robo' && pontos >= 200) {
+                pontos -= 200;
+                pontosPorSegundo += 5;
+            } else if (tipo === 'fazenda' && pontos >= 1000) {
+                pontos -= 1000;
+                pontosPorSegundo += 20;
             }
             atualizarInterface();
+        }
+
+        function salvarRanking() {
+            const nome = document.getElementById('nomeJogador').value;
+            if (!nome) return alert("Digite seu nome!");
+            ranking.push({ nome: nome, pontos: Math.floor(pontos) });
+            ranking.sort((a, b) => b.pontos - a.pontos);
+            ranking = ranking.slice(0, 5);
+            localStorage.setItem('rankingPedro', JSON.stringify(ranking));
+            desenharRanking();
+        }
+
+        function desenharRanking() {
+            const lista = document.getElementById('listaRanking');
+            lista.innerHTML = ranking.map(item => `<tr><td>${item.nome}</td><td>${item.pontos}</td></tr>`).join('');
         }
 
         setInterval(() => {
@@ -84,6 +162,9 @@
                 atualizarInterface();
             }
         }, 1000);
+
+        desenharRanking();
+        atualizarInterface();
     </script>
 </body>
 </html>

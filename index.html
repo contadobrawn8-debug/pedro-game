@@ -14,10 +14,7 @@
             animation: gradient 15s ease infinite;
         }
         @keyframes gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-
         .placar { font-size: 35px; margin: 10px 0; color: #ffd700; font-weight: bold; }
-        .info { font-size: 18px; color: #ccc; margin-bottom: 10px; }
-
         #moeda {
             width: 200px; height: 200px;
             background: radial-gradient(circle, #ffe066 0%, #ffd700 50%, #b8860b 100%);
@@ -28,56 +25,65 @@
             transition: transform 0.05s; position: relative; overflow: hidden; margin: 20px;
         }
         #moeda:active { transform: scale(0.9); }
-
         .container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 900px; }
         .painel { background: rgba(0, 0, 0, 0.7); padding: 20px; border-radius: 15px; border: 1px solid #ffd700; flex: 1; min-width: 280px; }
-        
-        button {
-            width: 100%; padding: 12px; margin: 8px 0;
-            background: #ffd700; border: none; border-radius: 5px;
-            font-weight: bold; cursor: pointer; transition: 0.2s;
-        }
+        button { width: 100%; padding: 12px; margin: 8px 0; background: #ffd700; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
         button:disabled { background: #555; color: #888; cursor: not-allowed; }
-        button:hover:not(:disabled) { background: #fff; transform: translateY(-2px); }
-
-        input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: none; box-sizing: border-box; }
-        table { width: 100%; margin-top: 10px; border-collapse: collapse; }
-        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #444; }
     </style>
 </head>
 <body>
-
     <h1>Pedro's Click Fortune</h1>
     <div class="placar">💰 Pontos: <span id="pontos">0</span></div>
-    <div class="info">Poder do Clique: <span id="poderClique">1</span> | Auto: <span id="poderAuto">0</span>/s</div>
-
     <div id="moeda" onclick="clicar()">$</div>
-
     <div class="container">
         <div class="painel">
-            <h3>🛒 Loja de Upgrades</h3>
-            <button id="btnClick" onclick="comprarUpgrade('click')">🔥 Super Clique (Custa 25) +1 por clique</button>
-            <hr>
-            <button id="btn1" onclick="comprarUpgrade('ajudante')">🤖 Ajudante (Custa 50) +1/s</button>
-            <button id="btn2" onclick="comprarUpgrade('robo')">🚀 Robô (Custa 200) +5/s</button>
-            <button id="btn3" onclick="comprarUpgrade('fazenda')">🏰 Fazenda (Custa 1000) +20/s</button>
-        </div>
-
-        <div class="painel">
-            <h3>🏆 Ranking</h3>
-            <input type="text" id="nomeJogador" placeholder="Seu nome">
-            <button onclick="salvarRanking()" style="background: #27ae60; color: white;">Salvar no Ranking</button>
-            <table>
-                <thead><tr><th>Nome</th><th>Pontos</th></tr></thead>
-                <tbody id="listaRanking"></tbody>
-            </table>
+            <h3>🛒 Loja</h3>
+            <button id="btnClick" onclick="comprarUpgrade('click')">🔥 Super Clique (25 pts)</button>
+            <button id="btn1" onclick="comprarUpgrade('ajudante')">🤖 Ajudante (50 pts)</button>
         </div>
     </div>
 
-    <audio id="somMoeda">
-        <source src="https://www.soundjay.com/buttons/sounds/button-37a.mp3" type="audio/mpeg">
-    </audio>
+    <audio id="somMoeda"><source src="https://www.soundjay.com/buttons/sounds/button-37a.mp3" type="audio/mpeg"></audio>
 
-    <script src="script.js"></script>
+    <script>
+        // O código JS agora está aqui dentro!
+        let pontos = 0;
+        let pontosPorClique = 1;
+        let pontosPorSegundo = 0;
+        let precoClick = 25;
+
+        function atualizarInterface() {
+            document.getElementById('pontos').innerText = Math.floor(pontos);
+            document.getElementById('btnClick').disabled = pontos < precoClick;
+            document.getElementById('btn1').disabled = pontos < 50;
+        }
+
+        function clicar() {
+            pontos += pontosPorClique;
+            const som = document.getElementById('somMoeda');
+            som.currentTime = 0;
+            som.play().catch(() => {});
+            atualizarInterface();
+        }
+
+        function comprarUpgrade(tipo) {
+            if (tipo === 'click' && pontos >= precoClick) {
+                pontos -= precoClick;
+                pontosPorClique += 1;
+                precoClick = Math.floor(precoClick * 1.5);
+            } else if (tipo === 'ajudante' && pontos >= 50) {
+                pontos -= 50;
+                pontosPorSegundo += 1;
+            }
+            atualizarInterface();
+        }
+
+        setInterval(() => {
+            if (pontosPorSegundo > 0) {
+                pontos += pontosPorSegundo;
+                atualizarInterface();
+            }
+        }, 1000);
+    </script>
 </body>
 </html>
